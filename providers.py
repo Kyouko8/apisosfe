@@ -262,7 +262,7 @@ class TypedAPIServiceProvider(APIServiceProvider):
         return [GerenciaResponse.model_validate(item) for item in res.json()]
 
 
-class SOSFEApiServiceProvider(TypedAPIServiceProvider):
+class SOFSEApiServiceProvider(TypedAPIServiceProvider):
     def __init__(self, base_url: str = 'https://api-servicios.sofse.gob.ar/v1', auth_endpoint: str = AUTH_ENDPOINT, encoder: Encoder = SOSFE_ENCODER, filename: str = CACHE_FILE_NAME):
         super().__init__(base_url=base_url)
         self.auth_endpoint = auth_endpoint
