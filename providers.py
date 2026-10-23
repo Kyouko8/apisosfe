@@ -49,6 +49,36 @@ def to_str(x) -> str | None:
     return str(x)
 
 
+def format_date(date: datetime) -> str:
+    """
+    Formatea la fecha como YYYY-MM-DD
+    Si la entrada es None, retorna None.
+    """
+    if date is None:
+        return None
+    return date.strftime("%Y-%m-%d")
+
+
+def format_time(date: datetime) -> str:
+    """
+    Formatea la fecha como HH:MM:SS
+    Si la entrada es None, retorna None.
+    """
+    if date is None:
+        return None
+    return date.strftime("%H:%M:%S")
+
+
+def to_argtz(date: datetime, tz=ARG_TZ) -> datetime:
+    """
+    Convierte la fecha al tz de Argentina.
+    Si la entrada es None, retorna None.
+    """
+    if date is None:
+        return None
+    return date.astimezone(tz)
+
+
 class Encoder:
     def __init__(self, s: str = "", cipher_rules: list[tuple[re.Pattern[str], list[str]]] = CIPHER_RULES):
         self.s = s
@@ -128,13 +158,13 @@ def is_token_expired(token: Optional[str]) -> bool:
         if len(parts) < 2:
             return True
         payload_b64 = parts[1]
-        # Añadir padding necesario para decodificar base64 en Python
+        # Añadir padding necesario para decodificar base64
         payload_b64 += '=' * (-len(payload_b64) % 4)
         payload_json = base64.b64decode(payload_b64).decode('utf-8')
         token_data = json.loads(payload_json)
         expiration_date = token_data.get('exp', 0)
 
-        # Comparación en milisegundos igual que en JS
+        # Comparación en milisegundos
         now_ms = time.time() * 1000
         return now_ms > (expiration_date * 1000)
     except Exception:
@@ -203,31 +233,31 @@ class APIServiceProvider(BaseServiceProvider):
     def get_from(self, endpoint: str, parameters: dict[str, str] = {}, headers: dict[str, str] = {}) -> requests.Response:
         return requests.get(f"{self.base_url}{endpoint}", params=parameters, headers=headers)
 
-    def buscar_estaciones(self, nombre=None, id_ramal=None):
+    def buscar_estaciones(self, nombre: Optional[str] = None, id_ramal: Optional[int] = None):
         return self.get_from('/infraestructura/estaciones', parameters={
             'nombre': to_str(nombre),
             'idRamal': to_str(id_ramal),
         })
 
-    def obtener_ramales(self, id_gerencia=None):
+    def obtener_ramales(self, id_gerencia: Optional[int] = None):
         return self.get_from('/infraestructura/ramales', parameters={
             'idGerencia': to_str(id_gerencia),
         })
 
-    def obtener_gerencias(self, id_empresa=1):
+    def obtener_gerencias(self, id_empresa: Optional[int] = 1):
         return self.get_from('/infraestructura/gerencias', parameters={
             'idEmpresa': to_str(id_empresa),
         })
 
-    def obtener_arribos(self, id,
-                        hasta=None,
-                        fecha=None,
-                        hora=None,
-                        cantidad=None,
-                        id_ramal=None,
-                        para_app=None,
-                        sentido=None,
-                        tipo_busqueda=None):
+    def obtener_arribos(self, id: str,
+                        hasta: Optional[str] = None,
+                        fecha: Optional[str] = None,
+                        hora: Optional[str] = None,
+                        cantidad: Optional[int] = None,
+                        id_ramal: Optional[int] = None,
+                        para_app: Optional[bool] = None,
+                        sentido: Optional[int] = None,
+                        tipo_busqueda: Optional[str] = None):
         return self.get_from(f'/arribos/estacion/{id}', parameters={
             'hasta': to_str(hasta),
             'fecha': to_str(fecha),
@@ -241,22 +271,32 @@ class APIServiceProvider(BaseServiceProvider):
 
 
 class TypedAPIServiceProvider(APIServiceProvider):
-    def obtener_arribos(self, id: str, **kwargs) -> ArribosResponse:
-        res = super().obtener_arribos(id, **kwargs)
+    def obtener_arribos(self, id: str,
+                        hasta: Optional[str] = None,
+                        fecha: Optional[str] = None,
+                        hora: Optional[str] = None,
+                        cantidad: Optional[int] = None,
+                        id_ramal: Optional[int] = None,
+                        para_app: Optional[bool] = None,
+                        sentido: Optional[int] = None,
+                        tipo_busqueda: Optional[str] = None) -> ArribosResponse:
+
+        res = super().obtener_arribos(id, hasta, fecha, hora, cantidad,
+                                      id_ramal, para_app, sentido, tipo_busqueda)
         res.raise_for_status()
         return ArribosResponse.model_validate(res.json())
 
-    def buscar_estaciones(self, nombre=None, id_ramal=None) -> list[EstacionSearchResponse]:
+    def buscar_estaciones(self, nombre: Optional[str] = None, id_ramal: Optional[int] = None) -> list[EstacionSearchResponse]:
         res = super().buscar_estaciones(nombre=nombre, id_ramal=id_ramal)
         res.raise_for_status()
         return [EstacionSearchResponse.model_validate(item) for item in res.json()]
 
-    def obtener_ramales(self, id_gerencia=None) -> list[RamalResponse]:
+    def obtener_ramales(self, id_gerencia: Optional[int] = None) -> list[RamalResponse]:
         res = super().obtener_ramales(id_gerencia=id_gerencia)
         res.raise_for_status()
         return [RamalResponse.model_validate(item) for item in res.json()]
 
-    def obtener_gerencias(self, id_empresa=1) -> list[GerenciaResponse]:
+    def obtener_gerencias(self, id_empresa: Optional[int] = 1) -> list[GerenciaResponse]:
         res = super().obtener_gerencias(id_empresa=id_empresa)
         res.raise_for_status()
         return [GerenciaResponse.model_validate(item) for item in res.json()]

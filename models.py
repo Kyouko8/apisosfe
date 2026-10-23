@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Union, Any
 from pydantic import BaseModel, Field
 
@@ -96,16 +97,35 @@ class Equipo(BaseModel):
 
 
 class HorarioDetalle(BaseModel):
-    programada: Optional[str] = None
-    estimada: Optional[str] = None
-    real: Optional[str] = None
+    programada: Optional[datetime] = None
+    estimada: Optional[datetime] = None
+    real: Optional[datetime] = None
     latitud: Optional[float] = None
     longitud: Optional[float] = None
     distancia: Optional[Union[float, int]] = None
     velocidad: Optional[int] = None
     referencia: Optional[int] = None
-    ultimaHoraRegistrada: Optional[str] = None
+    ultimaHoraRegistrada: Optional[datetime] = None
     inArea: Optional[bool] = None
+
+    def diferencia_programada_estimada(self) -> Optional[timedelta]:
+        if self.programada is None:
+            return None
+        if self.estimada is None:
+            return None
+        return self.estimada - self.programada
+
+    def tiempo_faltante(self, compare_with: Optional[datetime] = None) -> Optional[timedelta]:
+        if compare_with is None:
+            compare_with = datetime.now(timezone.utc)
+
+        if self.estimada is not None:
+            return self.estimada - compare_with
+
+        if self.programada is not None:
+            return self.programada - compare_with
+
+        return None
 
 
 class Tramo(BaseModel):
