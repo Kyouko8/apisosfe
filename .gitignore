@@ -1,0 +1,4 @@
+.venv
+.example_responses
+token.dat
+*.pyc
